@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Constants
+src/constants.py
+
 # C extensions
 *.so
 
