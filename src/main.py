@@ -7,7 +7,6 @@ import Summoner
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
 
-
 def init():
 
     summoner = Summoner.Summoner(constants.GET_SUMMONER())
@@ -22,6 +21,8 @@ def init():
             print('Future requests wait until the retry-after time passes.')
         elif err.response.status_code == 404:
             print('Summoner not found.')
+        elif err.response.status_code == 403:
+            print('You might want to update your API key.')
         else:
             raise
 
@@ -48,6 +49,7 @@ def init():
 
 #   1. game modes WL rate
 #   2. analyse and predict W/L per weekday
+
 
 
 def main():

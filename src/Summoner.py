@@ -3,6 +3,7 @@ import constants
 
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+from datetime import datetime
 import os
 import time
 
@@ -70,7 +71,9 @@ class Summoner(object):
         print("The dict looks like: ", win_loss_per_weekday)
 
         for idx, match in enumerate(self.matches_detail):
-            weekday = constants.unixtime_extract_day(int(match['gameCreation']) / 1000)
+            unixtime = int(match['gameCreation']) / 1000
+            weekday = datetime.utcfromtimestamp(unixtime).strftime('%A')
+
             for i in range(0, 10):
                 participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
                 # print(f"Participant ID of match {idx} is {participantId}")
