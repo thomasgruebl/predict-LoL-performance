@@ -27,14 +27,15 @@ def init():
 
     match_list = summoner.matches['matches']
     print(len(match_list))
+    print(match_list)
 
+    # Note: This API request returns the last ~100 matches and can therefore only be executed once every 2 minutes
     summoner.get_matches()
 
     print(f'Total gametime over the last {len(match_list)} games: {round(summoner.get_total_hours(), 2)}')
 
-    summoner.get_weekdays()
-
-
+    summoner.get_participants()
+    summoner.get_weekday_performance()
 
 # core logic:
 
@@ -43,10 +44,11 @@ def init():
 # summoner.calc_total_hours()
 # summoner.analyse_xxxxxxx()
 
-# class with statistical analysis functions
+# additional class with statistical analysis functions
 
 #   1. game modes WL rate
 #   2. analyse and predict W/L per weekday
+
 
 def main():
     init()
