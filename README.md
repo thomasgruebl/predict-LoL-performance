@@ -3,7 +3,9 @@
 constants.py structure:
 
 API_KEY = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
 LOL_REGION = "euw1"
+
 SUMMONER = "name"
 
 
