@@ -1,68 +1,72 @@
-from riotwatcher import LolWatcher, ApiError
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 import os
-import Summoner
+import aiohttp
+import asyncio
+
 
 # API Rate Limits:
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
 
-def init():
 
-    summoner = Summoner.Summoner(os.getenv("PREDLOL_SUMMONER_NAME"))
-
-    try:
-        summoner_name = summoner.watcher.summoner.by_name(
-            summoner.lol_region, summoner.name)
-        print(summoner_name)
-    except ApiError as err:
-        if err.response.status_code == 429:
-            print('Please retry in {} seconds.'.format(
-                err.response.headers['Retry-After']))
-            print('This retry-after is handled by default by the RiotWatcher library.')
-            print('Future requests wait until the retry-after time passes.')
-        elif err.response.status_code == 404:
-            print('Summoner not found.')
-        elif err.response.status_code == 403:
-            print('You might want to update your API key.')
-        else:
-            raise
-
-    match_list = summoner.matches['matches']
-    print(len(match_list))
-    print(match_list)
-
-    # Note: This API request returns the last ~100 matches and can therefore only be executed once every 2 minutes
-    summoner.get_matches()
-
-    # print(
-    #     f'Total gametime over the last {len(match_list)} games: {round(summoner.get_total_hours(), 2)}')
-
-    # summoner.get_participants()
-    # summoner.get_weekday_performance()
-
-# core logic:
-
-# summoner class
-
-# summoner.calc_total_hours()
-# summoner.analyse_xxxxxxx()
-
-# additional class with statistical analysis functions
-
-#   1. game modes WL rate
-#   2. analyse and predict W/L per weekday
+async def get_summoner_data(session, api_key, region, summoner_name):
+    async with session.get(
+        "https://" +
+        region +
+        ".api.riotgames.com/lol/summoner/v4/summoners/by-name/" +
+        summoner_name +
+        "?api_key=" +
+        api_key
+    ) as resp:
+        data = await resp.json()
+        return data
 
 
+async def get_match_list(session, api_key, region, account_id):
+    async with session.get(
+        "https://" +
+        region +
+        ".api.riotgames.com/lol/match/v4/matchlists/by-account/" +
+        account_id +
+        "?api_key=" +
+        api_key
+    ) as resp:
+        data = await resp.json()
+        return data
 
-def main():
+
+async def get_match_by_id(session, api_key, region, match_id):
+    async with session.get(
+        "https://" +
+        region +
+        ".api.riotgames.com/lol/match/v4/matches/" +
+        str(match_id) +
+        "?api_key=" +
+        api_key
+    ) as resp:
+        data = await resp.json()
+        return data
+
+
+async def main():
     load_dotenv()
-    # print(os.getenv("PREDLOL_SUMMONER_NAME"))
 
-    # config = dotenv_values(".env")
-    # print(config)
-    init()
+    api_key = os.getenv("PREDLOL_API_KEY")
+    summoner_name = os.getenv("PREDLOL_SUMMONER_NAME")
+    region = os.getenv("PREDLOL_REGION")
+
+    async with aiohttp.ClientSession() as session:
+        profile_data = await get_summoner_data(session, api_key, region, summoner_name)
+        # print(profile_data)
+        account_id = profile_data["accountId"]
+        match_list = await get_match_list(session, api_key, region, account_id)
+        # print(match_list)
+        latest_match_id = match_list["matches"][0]["gameId"]
+        print(latest_match_id)
+        latest_match_data = await get_match_by_id(session, api_key, region, latest_match_id)
+        print(latest_match_data)
 
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
