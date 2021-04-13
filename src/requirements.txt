@@ -2,3 +2,5 @@ matplotlib~=3.4.1
 asyncio~=3.4.3
 aiohttp~=3.7.4.post0
 python-dotenv~=0.17.0
+pymongo~=3.11.3
+riotwatcher~=3.1.1
