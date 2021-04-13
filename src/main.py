@@ -1,4 +1,6 @@
+import pymongo
 from dotenv import load_dotenv
+from pymongo import MongoClient
 import os
 import aiohttp
 import asyncio
@@ -7,6 +9,35 @@ import asyncio
 # API Rate Limits:
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
+
+def connect_database(db_user, db_pw, db_name):
+
+    # .env file:
+
+    # DB_USER = "predlol_user"
+    # DB_PW = "c75nvUxhcdQNYrlM"
+    # DB_NAME = "predlol"
+
+    try:
+        cluster = MongoClient(
+            "mongodb+srv://" +
+            db_user +
+            ":" +
+            db_pw +
+            "@cluster0.qxngf.mongodb.net/" +
+            db_name +
+            "?retryWrites=true&w=majority"
+        )
+
+        db = cluster["predlol"]
+        collection = db["python"]
+
+        # test
+        test_post = {"gameId": 0, "match_data": "empty"}
+        collection.insert_one(test_post)
+
+    except Exception as e:
+        print("Connection Error %d: %s" % (e.args[0], e.args[1]))
 
 
 async def get_summoner_data(session, api_key, region, summoner_name):
@@ -55,6 +86,12 @@ async def main():
     summoner_name = os.getenv("PREDLOL_SUMMONER_NAME")
     region = os.getenv("PREDLOL_REGION")
 
+    db_user = os.getenv("DB_USER")
+    db_pw = os.getenv("DB_PW")
+    db_name = os.getenv("DB_NAME")
+
+    connect_database(db_user, db_pw, db_name)
+
     async with aiohttp.ClientSession() as session:
         profile_data = await get_summoner_data(session, api_key, region, summoner_name)
         # print(profile_data)
@@ -76,7 +113,6 @@ async def main():
         for game_id in game_ids:
             match_data = await get_match_by_id(session, api_key, region, game_id)
             print(match_data)
-
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
