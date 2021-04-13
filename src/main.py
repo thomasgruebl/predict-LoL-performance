@@ -61,10 +61,21 @@ async def main():
         account_id = profile_data["accountId"]
         match_list = await get_match_list(session, api_key, region, account_id)
         # print(match_list)
+
+        # get latest match
         latest_match_id = match_list["matches"][0]["gameId"]
         print(latest_match_id)
         latest_match_data = await get_match_by_id(session, api_key, region, latest_match_id)
         print(latest_match_data)
+
+        # get last ~100 matches
+        game_ids = list()
+        game_ids = [match['gameId'] for match in match_list['matches']]
+        game_ids = game_ids[:95]
+
+        for game_id in game_ids:
+            match_data = await get_match_by_id(session, api_key, region, game_id)
+            print(match_data)
 
 
 if __name__ == '__main__':
