@@ -6,22 +6,11 @@
 2. champion v champion performance
 3. 
 
-constants.py structure:
+### .env file
+includes
 
-API_KEY = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+PREDLOL_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-LOL_REGION = "euw1"
+PREDLOL_SUMMONER_NAME="xxxxxxx"
 
-SUMMONER = "name"
-
-
-def GET_API_KEY():
-    return API_KEY
-
-
-def GET_REGION():
-    return LOL_REGION
-
-
-def GET_SUMMONER():
-    return SUMMONER
+PREDLOL_REGION="euw1"
