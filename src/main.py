@@ -1,14 +1,17 @@
 import pymongo
+from aiohttp.web_exceptions import HTTPError
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import os
 import aiohttp
 import asyncio
 
+import Summoner
 
 # API Rate Limits:
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
+
 
 def connect_database(db_user, db_pw, db_name):
 
@@ -93,26 +96,43 @@ async def main():
     connect_database(db_user, db_pw, db_name)
 
     async with aiohttp.ClientSession() as session:
+
         profile_data = await get_summoner_data(session, api_key, region, summoner_name)
         # print(profile_data)
+
+        if "status" in profile_data:
+            if profile_data['status']['status_code'] == 403:
+                raise ValueError("Check your API key.")
+            elif profile_data['status']['status_code'] == 404:
+                raise ValueError("Summoner name not found.")
+            elif profile_data['status']['status_code'] == 429:
+                raise ValueError("Retry later.")
+
         account_id = profile_data["accountId"]
         match_list = await get_match_list(session, api_key, region, account_id)
-        # print(match_list)
+        print(match_list)
 
         # get latest match
-        latest_match_id = match_list["matches"][0]["gameId"]
-        print(latest_match_id)
-        latest_match_data = await get_match_by_id(session, api_key, region, latest_match_id)
-        print(latest_match_data)
+        # latest_match_id = match_list["matches"][0]["gameId"]
+        # print(latest_match_id)
+        # latest_match_data = await get_match_by_id(session, api_key, region, latest_match_id)
+        # print(latest_match_data)
 
         # get last ~100 matches
-        game_ids = list()
         game_ids = [match['gameId'] for match in match_list['matches']]
         game_ids = game_ids[:95]
 
+        match_data = list()
         for game_id in game_ids:
-            match_data = await get_match_by_id(session, api_key, region, game_id)
-            print(match_data)
+            match_details = await get_match_by_id(session, api_key, region, game_id)
+            match_data.append(match_details)
+            print(match_details)
+
+    summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
+    summoner.get_total_hours()
+    summoner.get_participants()
+    summoner.get_weekday_performance()
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
