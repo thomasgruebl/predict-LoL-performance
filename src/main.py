@@ -1,5 +1,3 @@
-import pymongo
-from aiohttp.web_exceptions import HTTPError
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import os
@@ -11,6 +9,8 @@ import Summoner
 # API Rate Limits:
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
+
+DEBUG = True
 
 
 def connect_database(db_user, db_pw, db_name):
@@ -120,7 +120,11 @@ async def main():
 
         # get last ~100 matches
         game_ids = [match['gameId'] for match in match_list['matches']]
-        game_ids = game_ids[:95]
+
+        if DEBUG:
+            game_ids = game_ids[:10]
+        else:
+            game_ids = game_ids[:95]
 
         match_data = list()
         for game_id in game_ids:
@@ -129,10 +133,10 @@ async def main():
             print(match_details)
 
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
-    summoner.get_total_hours()
+    #summoner.get_total_hours()
     summoner.get_participants()
-    summoner.get_weekday_performance()
-
+    #summoner.get_weekday_performance()
+    summoner.get_champion_v_champion_performance()
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
