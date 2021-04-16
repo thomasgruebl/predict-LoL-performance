@@ -82,6 +82,27 @@ async def get_match_by_id(session, api_key, region, match_id):
         return data
 
 
+async def get_summoner_champion_mastery(session, api_key, region, summoner_id):
+    async with session.get(
+        "https://" +
+        region +
+        ".api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" +
+        summoner_id +
+        "?api_key=" +
+        api_key
+    ) as resp:
+        data = await resp.json()
+        return data
+
+
+async def get_all_champion_details(session):
+    async with session.get(
+        "https://ddragon.leagueoflegends.com/cdn/9.3.1/data/en_US/champion.json"
+    ) as resp:
+        data = await resp.json()
+        return data
+
+
 async def main():
     load_dotenv()
 
@@ -100,6 +121,10 @@ async def main():
         profile_data = await get_summoner_data(session, api_key, region, summoner_name)
         # print(profile_data)
 
+        summoner_id = profile_data["id"]
+        summoner_champion_mastery = await get_summoner_champion_mastery(session, api_key, region, summoner_id)
+        # print(summoner_champion_mastery)
+
         if "status" in profile_data:
             if profile_data['status']['status_code'] == 403:
                 raise ValueError("Check your API key.")
@@ -111,12 +136,6 @@ async def main():
         account_id = profile_data["accountId"]
         match_list = await get_match_list(session, api_key, region, account_id)
         print(match_list)
-
-        # get latest match
-        # latest_match_id = match_list["matches"][0]["gameId"]
-        # print(latest_match_id)
-        # latest_match_data = await get_match_by_id(session, api_key, region, latest_match_id)
-        # print(latest_match_data)
 
         # get last ~100 matches
         game_ids = [match['gameId'] for match in match_list['matches']]
@@ -132,11 +151,22 @@ async def main():
             match_data.append(match_details)
             print(match_details)
 
+        # get champion data
+        champion_id, champion_name = list(), list()
+        champion_data = await get_all_champion_details(session)
+        for champ in champion_data['data']:
+            champion_id.append(champion_data['data'][champ]['key'])
+            champion_name.append(champ)
+
+        champion_id_name_lookup = dict(zip(champion_id, champion_name))
+        print(champion_id_name_lookup)
+
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
     #summoner.get_total_hours()
     summoner.get_participants()
     #summoner.get_weekday_performance()
-    summoner.get_champion_v_champion_performance()
+    summoner.get_champion_v_champion_performance(champion_id_name_lookup)
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
