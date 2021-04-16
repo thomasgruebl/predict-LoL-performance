@@ -1,5 +1,9 @@
+import collections
+
 import matplotlib.pyplot as plt
 from datetime import datetime
+
+from typing import Dict
 
 
 class Summoner(object):
@@ -97,13 +101,14 @@ class Summoner(object):
 
         return win_loss_per_weekday
 
-    def get_champion_v_champion_performance(self):
+    def get_champion_v_champion_performance(self, champion_id_name_lookup):
 
         # NOTE: EXCLUDE EVERYTHING EXCEPT 'gameMode': 'CLASSIC'
 
-        # We need a lookup table for championIds -> names
-
         # HEATMAP Matrix comparison of Champ v Champ performance?
+
+        # Format: k: -> (summoner_champ, opponent_champ) v: -> [summoner wins and losses]
+        performance_dict = collections.defaultdict(list)
 
         for idx, match in enumerate(self.match_data):
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
@@ -117,11 +122,24 @@ class Summoner(object):
                     if match['participants'][i]['timeline']['role'] == match['participants'][participant_id - 1]['timeline']['role']:
                         opponent_id = match['participants'][i]['participantId']
                         opponent_champion = match['participants'][opponent_id - 1]['championId']
+
                     print(f"OPP ID {opponent_id} and champ is {opponent_champion}")
 
+                    # add names instead of ID's
+
+                    if match['participants'][i]['stats']['win']:
+                        performance_dict[(champion_id, opponent_champion)].append('win')
+                    else:
+                        performance_dict[(champion_id, opponent_champion)].append('loss')
+
+        print(performance_dict)
 
 
     def predict_weekday_performance(self):
         # get_weekday_performance()
+        pass
+
+    def predict_next_game_outcome(self):
+        # Markov Chain prediction of next game win/loss
         pass
 
