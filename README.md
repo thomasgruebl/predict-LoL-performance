@@ -7,6 +7,8 @@
 3. Afer winning or losing a game -> what is the likelihood of winning/losing the next one? i.e. Markov Chains
 4. Verify the op.gg champion counter statistics by crawling champion v champion performance data from thousands of players and
    checking the win/lose likelihood
+   
+5. Visualisation using Splunk -> forward output data to AWS instance running Splunk enterprise
 
 ### .env file
 includes
