@@ -107,6 +107,8 @@ class Summoner(object):
 
         # HEATMAP Matrix comparison of Champ v Champ performance?
 
+        # farming stats
+
         # Format: k: -> (summoner_champ, opponent_champ) v: -> [summoner wins and losses]
         performance_dict = collections.defaultdict(list)
 
@@ -134,12 +136,55 @@ class Summoner(object):
 
         print(performance_dict)
 
+    # Markov Chain prediction of next game win/loss
+    def predict_next_game_outcome(self):
+        match_outcomes = list()
+        most_recent_game = True
+        most_recent_game_outcome = True
+        for idx, match in enumerate(self.match_data):
+            participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
+            for i in range(0, 10):
+                if match['participants'][i]['participantId'] == participant_id:
+                    if most_recent_game:
+                        most_recent_game_outcome = match['participants'][i]['stats']['win']
+                    most_recent_game = False
+
+                    if match['participants'][i]['stats']['win']:
+                        match_outcomes.append('win')
+                    else:
+                        match_outcomes.append('loss')
+
+        pairs = self.__make_pairs(match_outcomes)
+        win_loss_dict = self.__make_chains(pairs)
+
+        if most_recent_game_outcome:
+            count_wins = win_loss_dict['win'].count('win')
+            count_losses = win_loss_dict['win'].count('loss')
+            return {'win_prob': count_wins / (count_wins + count_losses),
+                    'loss_prob': count_losses / (count_wins + count_losses)}
+        else:
+            count_wins = win_loss_dict['loss'].count('win')
+            count_losses = win_loss_dict['loss'].count('loss')
+            return {'win_prob': count_wins / (count_wins + count_losses),
+                    'loss_prob': count_losses / (count_wins + count_losses)}
+
+    @staticmethod
+    def __make_pairs(match_outcomes):
+        for i in range(len(match_outcomes) - 1):
+            yield match_outcomes[i], match_outcomes[i + 1]
+
+    @staticmethod
+    def __make_chains(pairs):
+        win_loss_dict = dict()
+        for outcome1, outcome2 in pairs:
+            if outcome1 in win_loss_dict.keys():
+                win_loss_dict[outcome1].append(outcome2)
+            else:
+                win_loss_dict[outcome1] = [outcome2]
+        return win_loss_dict
 
     def predict_weekday_performance(self):
         # get_weekday_performance()
         pass
 
-    def predict_next_game_outcome(self):
-        # Markov Chain prediction of next game win/loss
-        pass
 
