@@ -10,7 +10,7 @@ import Summoner
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
 
-DEBUG = True
+DEBUG = False
 
 
 def connect_database(db_user, db_pw, db_name):
@@ -36,11 +36,11 @@ def connect_database(db_user, db_pw, db_name):
         collection = db["python"]
 
         # test
-        test_post = {"gameId": 0, "match_data": "empty"}
+        test_post = {"_id": 0, "match_data": "empty"}
         collection.insert_one(test_post)
 
     except Exception as e:
-        print("Connection Error %d: %s" % (e.args[0], e.args[1]))
+        print("Connection Error.")
 
 
 async def get_summoner_data(session, api_key, region, summoner_name):
@@ -114,7 +114,7 @@ async def main():
     db_pw = os.getenv("DB_PW")
     db_name = os.getenv("DB_NAME")
 
-    connect_database(db_user, db_pw, db_name)
+    # connect_database(db_user, db_pw, db_name)
 
     async with aiohttp.ClientSession() as session:
 
@@ -166,6 +166,8 @@ async def main():
     summoner.get_participants()
     #summoner.get_weekday_performance()
     summoner.get_champion_v_champion_performance(champion_id_name_lookup)
+    outcome = summoner.predict_next_game_outcome()
+    print(outcome)
 
 
 if __name__ == '__main__':
