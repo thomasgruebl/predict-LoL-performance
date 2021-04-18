@@ -1,9 +1,7 @@
 import collections
-
-import matplotlib.pyplot as plt
 from datetime import datetime
 
-from typing import Dict
+import matplotlib.pyplot as plt
 
 
 class Summoner(object):
@@ -45,7 +43,10 @@ class Summoner(object):
         participants_dict = dict.fromkeys([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         for match in self.match_data:
             for i in range(0, 10):
-                participants_dict[i+1] = match['participantIdentities'][i]['player']['summonerName']
+                try:
+                    participants_dict[i+1] = match['participantIdentities'][i]['player']['summonerName']
+                except KeyError:
+                    continue
             self.participants.append(participants_dict.copy())
             participants_dict.clear()
         print(self.participants)
