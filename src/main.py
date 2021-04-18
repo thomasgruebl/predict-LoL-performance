@@ -1,8 +1,10 @@
+import asyncio
+import os
+
+import aiohttp
+import pymongo
 from dotenv import load_dotenv
 from pymongo import MongoClient
-import os
-import aiohttp
-import asyncio
 
 import Summoner
 
@@ -10,11 +12,10 @@ import Summoner
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
 
-DEBUG = False
+DEBUG = True
 
 
 def connect_database(db_user, db_pw, db_name):
-
     # .env file:
 
     # DB_USER = "predlol_user"
@@ -35,22 +36,32 @@ def connect_database(db_user, db_pw, db_name):
         db = cluster["predlol"]
         collection = db["python"]
 
-        # test
-        test_post = {"_id": 0, "match_data": "empty"}
-        collection.insert_one(test_post)
+        return collection
 
     except Exception as e:
         print("Connection Error.")
 
 
+def post_database(collection, summoner_id, summoner_name, game_ids, match_data):
+    for idx, id in enumerate(game_ids):
+        doc = {"_id": id,
+               "summoner_id": summoner_id,
+               "summoner_name": summoner_name,
+               "match_data": match_data[idx]}
+        try:
+            collection.update_one(doc, {'$set': doc}, upsert=True)
+        except pymongo.errors.DuplicateKeyError:
+            continue
+
+
 async def get_summoner_data(session, api_key, region, summoner_name):
     async with session.get(
-        "https://" +
-        region +
-        ".api.riotgames.com/lol/summoner/v4/summoners/by-name/" +
-        summoner_name +
-        "?api_key=" +
-        api_key
+            "https://" +
+            region +
+            ".api.riotgames.com/lol/summoner/v4/summoners/by-name/" +
+            summoner_name +
+            "?api_key=" +
+            api_key
     ) as resp:
         data = await resp.json()
         return data
@@ -58,12 +69,12 @@ async def get_summoner_data(session, api_key, region, summoner_name):
 
 async def get_match_list(session, api_key, region, account_id):
     async with session.get(
-        "https://" +
-        region +
-        ".api.riotgames.com/lol/match/v4/matchlists/by-account/" +
-        account_id +
-        "?api_key=" +
-        api_key
+            "https://" +
+            region +
+            ".api.riotgames.com/lol/match/v4/matchlists/by-account/" +
+            account_id +
+            "?api_key=" +
+            api_key
     ) as resp:
         data = await resp.json()
         return data
@@ -71,12 +82,12 @@ async def get_match_list(session, api_key, region, account_id):
 
 async def get_match_by_id(session, api_key, region, match_id):
     async with session.get(
-        "https://" +
-        region +
-        ".api.riotgames.com/lol/match/v4/matches/" +
-        str(match_id) +
-        "?api_key=" +
-        api_key
+            "https://" +
+            region +
+            ".api.riotgames.com/lol/match/v4/matches/" +
+            str(match_id) +
+            "?api_key=" +
+            api_key
     ) as resp:
         data = await resp.json()
         return data
@@ -84,12 +95,12 @@ async def get_match_by_id(session, api_key, region, match_id):
 
 async def get_summoner_champion_mastery(session, api_key, region, summoner_id):
     async with session.get(
-        "https://" +
-        region +
-        ".api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" +
-        summoner_id +
-        "?api_key=" +
-        api_key
+            "https://" +
+            region +
+            ".api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" +
+            summoner_id +
+            "?api_key=" +
+            api_key
     ) as resp:
         data = await resp.json()
         return data
@@ -97,7 +108,7 @@ async def get_summoner_champion_mastery(session, api_key, region, summoner_id):
 
 async def get_all_champion_details(session):
     async with session.get(
-        "https://ddragon.leagueoflegends.com/cdn/9.3.1/data/en_US/champion.json"
+            "https://ddragon.leagueoflegends.com/cdn/9.3.1/data/en_US/champion.json"
     ) as resp:
         data = await resp.json()
         return data
@@ -114,16 +125,12 @@ async def main():
     db_pw = os.getenv("DB_PW")
     db_name = os.getenv("DB_NAME")
 
-    # connect_database(db_user, db_pw, db_name)
+    collection = connect_database(db_user, db_pw, db_name)
 
     async with aiohttp.ClientSession() as session:
 
         profile_data = await get_summoner_data(session, api_key, region, summoner_name)
         # print(profile_data)
-
-        summoner_id = profile_data["id"]
-        summoner_champion_mastery = await get_summoner_champion_mastery(session, api_key, region, summoner_id)
-        # print(summoner_champion_mastery)
 
         if "status" in profile_data:
             if profile_data['status']['status_code'] == 403:
@@ -132,6 +139,10 @@ async def main():
                 raise ValueError("Summoner name not found.")
             elif profile_data['status']['status_code'] == 429:
                 raise ValueError("Retry later.")
+
+        summoner_id = profile_data["id"]
+        summoner_champion_mastery = await get_summoner_champion_mastery(session, api_key, region, summoner_id)
+        # print(summoner_champion_mastery)
 
         account_id = profile_data["accountId"]
         match_list = await get_match_list(session, api_key, region, account_id)
@@ -162,14 +173,18 @@ async def main():
         print(champion_id_name_lookup)
 
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
-    #summoner.get_total_hours()
+    # summoner.get_total_hours()
     summoner.get_participants()
-    #summoner.get_weekday_performance()
+    # summoner.get_weekday_performance()
     summoner.get_champion_v_champion_performance(champion_id_name_lookup)
     outcome = summoner.predict_next_game_outcome()
     print(outcome)
+
+    # post to database
+    post_database(collection, summoner_id, summoner_name, game_ids, match_data)
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+
