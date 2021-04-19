@@ -175,10 +175,10 @@ async def main():
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
     # summoner.get_total_hours()
     summoner.get_participants()
-    # summoner.get_weekday_performance()
-    summoner.get_champion_v_champion_performance(champion_id_name_lookup)
-    outcome = summoner.predict_next_game_outcome()
-    print(outcome)
+    summoner.get_weekday_performance()
+    #summoner.get_champion_v_champion_performance(champion_id_name_lookup)
+    #outcome = summoner.predict_next_game_outcome()
+    #print(outcome)
 
     # post to database
     post_database(collection, summoner_id, summoner_name, game_ids, match_data)
