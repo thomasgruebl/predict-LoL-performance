@@ -72,10 +72,7 @@ class Summoner(object):
             unixtime = int(match['gameCreation']) / 1000
             weekday = datetime.utcfromtimestamp(unixtime).strftime('%A')
             for i in range(0, 10):
-                # print(f"Participant ID of match {idx} is {participantId}")
                 if match['participants'][i]['participantId'] == participant_id:
-                    # print(match['participants'][i]['participantId'])
-                    # print(match['participants'][i]['stats']['win'])
                     if match['participants'][i]['stats']['win']:
                         win_loss_per_weekday[weekday][0] += 1
                     else:
@@ -88,8 +85,8 @@ class Summoner(object):
         chart_labels = win_loss_per_weekday.keys()
         wins = [x[0] for x in win_loss_per_weekday.values()]
         losses = [x[1] for x in win_loss_per_weekday.values()]
-        wins_percentage = [round(x / (x + y), 2) for x, y in zip(wins, losses)]
-        losses_percentage = [round(x / (x + y), 2) for x, y in zip(losses, wins)]
+        wins_percentage = [round(x / (x + y), 2) if (x + y) > 0 else 0 for x, y in zip(wins, losses)]
+        losses_percentage = [round(x / (x + y), 2) if (x + y) > 0 else 0 for x, y in zip(losses, wins)]
         width = 0.35
 
         fig, ax = plt.subplots()
@@ -103,9 +100,7 @@ class Summoner(object):
         return win_loss_per_weekday
 
     def get_champion_v_champion_performance(self, champion_id_name_lookup):
-
-        # NOTE: EXCLUDE EVERYTHING EXCEPT 'gameMode': 'CLASSIC'
-
+        """returns champion v champion performance based on win/loss ratio"""
         # HEATMAP Matrix comparison of Champ v Champ performance?
 
         # farming stats
@@ -114,6 +109,10 @@ class Summoner(object):
         performance_dict = collections.defaultdict(list)
 
         for idx, match in enumerate(self.match_data):
+            # exclude all other game modes
+            if match['gameMode'] != 'CLASSIC':
+                continue
+
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
             champion_id = match['participants'][participant_id - 1]['championId']
             print(f"Part ID {participant_id} and champ is {champion_id}")
@@ -128,17 +127,20 @@ class Summoner(object):
 
                     print(f"OPP ID {opponent_id} and champ is {opponent_champion}")
 
-                    # add names instead of ID's
-
-                    if match['participants'][i]['stats']['win']:
-                        performance_dict[(champion_id, opponent_champion)].append('win')
-                    else:
-                        performance_dict[(champion_id, opponent_champion)].append('loss')
+                    try:
+                        if match['participants'][i]['stats']['win']:
+                            performance_dict[(champion_id_name_lookup[str(champion_id)],
+                                              champion_id_name_lookup[str(opponent_champion)])].append('win')
+                        else:
+                            performance_dict[(champion_id_name_lookup[str(champion_id)],
+                                              champion_id_name_lookup[str(opponent_champion)])].append('loss')
+                    except KeyError:
+                        continue
 
         print(performance_dict)
 
-    # Markov Chain prediction of next game win/loss
     def predict_next_game_outcome(self):
+        """Markov Chain prediction of next game win/loss"""
         match_outcomes = list()
         most_recent_game = True
         most_recent_game_outcome = True
@@ -185,7 +187,6 @@ class Summoner(object):
         return win_loss_dict
 
     def predict_weekday_performance(self):
+        """Extrapolating average historical data to future events"""
         # get_weekday_performance()
         pass
-
-
