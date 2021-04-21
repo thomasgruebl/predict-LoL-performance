@@ -33,7 +33,7 @@ def connect_database(db_user, db_pw, db_name):
             "?retryWrites=true&w=majority"
         )
 
-        db = cluster["predlol"]
+        db = cluster[db_name]
         collection = db["python"]
 
         return collection
@@ -42,8 +42,8 @@ def connect_database(db_user, db_pw, db_name):
         print("Connection Error.")
 
 
-def post_database(collection, summoner_id, summoner_name, game_ids, match_data):
-    for idx, id in enumerate(game_ids):
+def post_database(collection, summoner_id, summoner_name, match_list, match_data):
+    for idx, id in enumerate(match_list):
         doc = {"_id": id,
                "summoner_id": summoner_id,
                "summoner_name": summoner_name,
@@ -67,12 +67,14 @@ async def get_summoner_data(session, api_key, region, summoner_name):
         return data
 
 
-async def get_match_list(session, api_key, region, account_id):
+async def get_match_list(session, api_key, region, puuid):
+    """new match-v5 API call changed region from 'euw1' to 'europe'"""
     async with session.get(
             "https://" +
-            region +
-            ".api.riotgames.com/lol/match/v4/matchlists/by-account/" +
-            account_id +
+            "europe" +
+            ".api.riotgames.com/lol/match/v5/matches/by-puuid/" +
+            puuid +
+            "/ids" +
             "?api_key=" +
             api_key
     ) as resp:
@@ -81,10 +83,11 @@ async def get_match_list(session, api_key, region, account_id):
 
 
 async def get_match_by_id(session, api_key, region, match_id):
+    """new match-v5 API call changed region from 'euw1' to 'europe'"""
     async with session.get(
             "https://" +
-            region +
-            ".api.riotgames.com/lol/match/v4/matches/" +
+            "europe" +
+            ".api.riotgames.com/lol/match/v5/matches/" +
             str(match_id) +
             "?api_key=" +
             api_key
@@ -144,21 +147,22 @@ async def main():
         summoner_champion_mastery = await get_summoner_champion_mastery(session, api_key, region, summoner_id)
         # print(summoner_champion_mastery)
 
-        account_id = profile_data["accountId"]
-        match_list = await get_match_list(session, api_key, region, account_id)
+        # adapted to match-v5 (using puuid) since match-v4 (accountid) is being deprecated soon
+        puuid = profile_data["puuid"]
+        match_list = await get_match_list(session, api_key, region, puuid)
         print(match_list)
 
         # get last ~100 matches
-        game_ids = [match['gameId'] for match in match_list['matches']]
+        # game_ids = [match['gameId'] for match in match_list['matches']]
 
         if DEBUG:
-            game_ids = game_ids[:10]
+            match_list = match_list[:10]
         else:
-            game_ids = game_ids[:95]
+            match_list = match_list[:95]
 
         match_data = list()
-        for game_id in game_ids:
-            match_details = await get_match_by_id(session, api_key, region, game_id)
+        for match_id in match_list:
+            match_details = await get_match_by_id(session, api_key, region, match_id)
             match_data.append(match_details)
             print(match_details)
 
@@ -174,14 +178,15 @@ async def main():
 
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
     # summoner.get_total_hours()
-    summoner.get_participants()
+    #summoner.get_participants_v4()
+    summoner.get_participants_v5()
     summoner.get_weekday_performance()
-    #summoner.get_champion_v_champion_performance(champion_id_name_lookup)
-    #outcome = summoner.predict_next_game_outcome()
-    #print(outcome)
+    summoner.get_champion_v_champion_performance(champion_id_name_lookup)
+    outcome = summoner.predict_next_game_outcome()
+    print(outcome)
 
     # post to database
-    post_database(collection, summoner_id, summoner_name, game_ids, match_data)
+    # post_database(collection, summoner_id, summoner_name, match_list, match_data)
 
 
 if __name__ == '__main__':
