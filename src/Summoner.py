@@ -35,9 +35,6 @@ class Summoner(object):
         self.matches_detail = match_details
         '''
 
-    def _get_participant_id_from_summoner_name(self, d: dict):
-        return list(d.keys())[list(d.values()).index(self.name)]
-
     """
     # handling data from deprecated match-v4 API call
     def get_participants_v4(self):
@@ -56,13 +53,17 @@ class Summoner(object):
         return self.participants
     """
 
+    def _get_participant_id_from_summoner_name(self, d: dict):
+        return list(d.keys())[list(d.values()).index(self.name)]
+
     def get_participants_v5(self):
         # Participant dictionary with participantId as key and summonerName as value
         participants_dict = dict.fromkeys([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         for match in self.match_data:
             for i in range(0, 10):
                 try:
-                    participants_dict[i + 1] = match['info']['participants'][i]['summonerName']
+                    if match['info']['gameCreation'] != 0:
+                        participants_dict[i + 1] = match['info']['participants'][i]['summonerName']
                 except KeyError:
                     continue
             self.participants.append(participants_dict.copy())
@@ -86,6 +87,8 @@ class Summoner(object):
             win_loss_per_weekday[k] = [0, 0]
 
         for idx, match in enumerate(self.match_data):
+            if match['info']['gameCreation'] == 0:
+                continue
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
             unixtime = int(match['info']['gameCreation']) / 1000
             weekday = datetime.utcfromtimestamp(unixtime).strftime('%A')
@@ -126,16 +129,18 @@ class Summoner(object):
         # Format: k: -> (summoner_champ, opponent_champ) v: -> [summoner wins and losses]
         performance_dict = collections.defaultdict(list)
 
+        print(len(self.match_data))
+
         for idx, match in enumerate(self.match_data):
             # exclude all other game modes
-            if match['info']['gameMode'] != 'CLASSIC':
+            if match['info']['gameMode'] != 'CLASSIC' or match['info']['gameCreation'] == 0:
                 continue
 
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
             champion_id = match['info']['participants'][participant_id - 1]['championId']
-            print(f"Part ID {participant_id} and champ is {champion_id}")
             for i in range(0, 10):
-                if match['info']['participants'][i]['individualPosition'] == match['info']['participants'][participant_id - 1]['individualPosition'] \
+                if match['info']['participants'][i]['individualPosition'] == \
+                        match['info']['participants'][participant_id - 1]['individualPosition'] \
                         and (match['info']['participants'][i]['participantId'] != participant_id):
 
                     opponent_id = match['info']['participants'][i]['participantId']
@@ -161,6 +166,8 @@ class Summoner(object):
         most_recent_game = True
         most_recent_game_outcome = True
         for idx, match in enumerate(self.match_data):
+            if match['info']['gameCreation'] == 0:
+                continue
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
             for i in range(0, 10):
                 if match['info']['participants'][i]['participantId'] == participant_id:
@@ -179,13 +186,13 @@ class Summoner(object):
         if most_recent_game_outcome:
             count_wins = win_loss_dict['win'].count('win')
             count_losses = win_loss_dict['win'].count('loss')
-            return {'win_prob': count_wins / (count_wins + count_losses),
-                    'loss_prob': count_losses / (count_wins + count_losses)}
+            return {'win_prob': round(count_wins / (count_wins + count_losses), 2),
+                    'loss_prob': round(count_losses / (count_wins + count_losses), 2)}
         else:
             count_wins = win_loss_dict['loss'].count('win')
             count_losses = win_loss_dict['loss'].count('loss')
-            return {'win_prob': count_wins / (count_wins + count_losses),
-                    'loss_prob': count_losses / (count_wins + count_losses)}
+            return {'win_prob': round(count_wins / (count_wins + count_losses), 2),
+                    'loss_prob': round(count_losses / (count_wins + count_losses), 2)}
 
     @staticmethod
     def __make_pairs(match_outcomes):
