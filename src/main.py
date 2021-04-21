@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 
 import aiohttp
 import pymongo
@@ -12,7 +13,7 @@ import Summoner
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
 
-DEBUG = True
+DEBUG = False
 
 
 def connect_database(db_user, db_pw, db_name):
@@ -74,8 +75,8 @@ async def get_match_list(session, api_key, region, puuid):
             "europe" +
             ".api.riotgames.com/lol/match/v5/matches/by-puuid/" +
             puuid +
-            "/ids" +
-            "?api_key=" +
+            "/ids?start=0&count=100&" +
+            "&api_key=" +
             api_key
     ) as resp:
         data = await resp.json()
@@ -165,6 +166,7 @@ async def main():
             match_details = await get_match_by_id(session, api_key, region, match_id)
             match_data.append(match_details)
             print(match_details)
+            time.sleep(0.05)
 
         # get champion data
         champion_id, champion_name = list(), list()
@@ -178,9 +180,9 @@ async def main():
 
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
     # summoner.get_total_hours()
-    #summoner.get_participants_v4()
+    # summoner.get_participants_v4()
     summoner.get_participants_v5()
-    summoner.get_weekday_performance()
+    # summoner.get_weekday_performance()
     summoner.get_champion_v_champion_performance(champion_id_name_lookup)
     outcome = summoner.predict_next_game_outcome()
     print(outcome)
