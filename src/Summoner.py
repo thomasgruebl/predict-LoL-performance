@@ -38,7 +38,9 @@ class Summoner(object):
     def _get_participant_id_from_summoner_name(self, d: dict):
         return list(d.keys())[list(d.values()).index(self.name)]
 
-    def get_participants(self):
+    """
+    # handling data from deprecated match-v4 API call
+    def get_participants_v4(self):
         # Participant dictionary with participantId as key and summonerName as value
         participants_dict = dict.fromkeys([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         for match in self.match_data:
@@ -52,11 +54,27 @@ class Summoner(object):
         print(self.participants)
 
         return self.participants
+    """
+
+    def get_participants_v5(self):
+        # Participant dictionary with participantId as key and summonerName as value
+        participants_dict = dict.fromkeys([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        for match in self.match_data:
+            for i in range(0, 10):
+                try:
+                    participants_dict[i + 1] = match['info']['participants'][i]['summonerName']
+                except KeyError:
+                    continue
+            self.participants.append(participants_dict.copy())
+            participants_dict.clear()
+        print(self.participants)
+
+        return self.participants
 
     def get_total_hours(self):
         total_hours = 0
         for match in self.match_data:
-            total_hours += int(match['gameDuration']) / 3600
+            total_hours += int(match['info']['gameDuration']) / 3600000
 
         print("Total hours played: ", total_hours)
         return total_hours
@@ -69,11 +87,11 @@ class Summoner(object):
 
         for idx, match in enumerate(self.match_data):
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
-            unixtime = int(match['gameCreation']) / 1000
+            unixtime = int(match['info']['gameCreation']) / 1000
             weekday = datetime.utcfromtimestamp(unixtime).strftime('%A')
             for i in range(0, 10):
-                if match['participants'][i]['participantId'] == participant_id:
-                    if match['participants'][i]['stats']['win']:
+                if match['info']['participants'][i]['participantId'] == participant_id:
+                    if match['info']['participants'][i]['win']:
                         win_loss_per_weekday[weekday][0] += 1
                     else:
                         win_loss_per_weekday[weekday][1] += 1
@@ -110,30 +128,28 @@ class Summoner(object):
 
         for idx, match in enumerate(self.match_data):
             # exclude all other game modes
-            if match['gameMode'] != 'CLASSIC':
+            if match['info']['gameMode'] != 'CLASSIC':
                 continue
 
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
-            champion_id = match['participants'][participant_id - 1]['championId']
+            champion_id = match['info']['participants'][participant_id - 1]['championId']
             print(f"Part ID {participant_id} and champ is {champion_id}")
             for i in range(0, 10):
-                if match['participants'][i]['timeline']['lane'] == match['participants'][participant_id - 1]['timeline']['lane'] \
-                        and (match['participants'][i]['participantId'] != participant_id):
-                    opponent_id = match['participants'][i]['participantId']
-                    opponent_champion = match['participants'][opponent_id - 1]['championId']
-                    if match['participants'][i]['timeline']['role'] == match['participants'][participant_id - 1]['timeline']['role']:
-                        opponent_id = match['participants'][i]['participantId']
-                        opponent_champion = match['participants'][opponent_id - 1]['championId']
+                if match['info']['participants'][i]['individualPosition'] == match['info']['participants'][participant_id - 1]['individualPosition'] \
+                        and (match['info']['participants'][i]['participantId'] != participant_id):
 
-                    print(f"OPP ID {opponent_id} and champ is {opponent_champion}")
+                    opponent_id = match['info']['participants'][i]['participantId']
+                    opponent_champion = match['info']['participants'][opponent_id - 1]['championId']
+
+                    # print(f"OPP ID {opponent_id} and champ is {opponent_champion}")
 
                     try:
-                        if match['participants'][i]['stats']['win']:
-                            performance_dict[(champion_id_name_lookup[str(champion_id)],
-                                              champion_id_name_lookup[str(opponent_champion)])].append('win')
-                        else:
+                        if match['info']['participants'][i]['win']:
                             performance_dict[(champion_id_name_lookup[str(champion_id)],
                                               champion_id_name_lookup[str(opponent_champion)])].append('loss')
+                        else:
+                            performance_dict[(champion_id_name_lookup[str(champion_id)],
+                                              champion_id_name_lookup[str(opponent_champion)])].append('win')
                     except KeyError:
                         continue
 
@@ -147,12 +163,12 @@ class Summoner(object):
         for idx, match in enumerate(self.match_data):
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
             for i in range(0, 10):
-                if match['participants'][i]['participantId'] == participant_id:
+                if match['info']['participants'][i]['participantId'] == participant_id:
                     if most_recent_game:
-                        most_recent_game_outcome = match['participants'][i]['stats']['win']
+                        most_recent_game_outcome = match['info']['participants'][i]['win']
                     most_recent_game = False
 
-                    if match['participants'][i]['stats']['win']:
+                    if match['info']['participants'][i]['win']:
                         match_outcomes.append('win')
                     else:
                         match_outcomes.append('loss')
