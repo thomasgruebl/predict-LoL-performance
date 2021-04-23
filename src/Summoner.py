@@ -127,7 +127,8 @@ class Summoner(object):
         # farming stats
 
         # Format: k: -> (summoner_champ, opponent_champ) v: -> [summoner wins and losses]
-        performance_dict = collections.defaultdict(list)
+        win_loss_dict = collections.defaultdict(list)
+        performance_dict = collections.defaultdict(float)
 
         print(len(self.match_data))
 
@@ -150,13 +151,21 @@ class Summoner(object):
 
                     try:
                         if match['info']['participants'][i]['win']:
-                            performance_dict[(champion_id_name_lookup[str(champion_id)],
+                            win_loss_dict[(champion_id_name_lookup[str(champion_id)],
                                               champion_id_name_lookup[str(opponent_champion)])].append('loss')
                         else:
-                            performance_dict[(champion_id_name_lookup[str(champion_id)],
+                            win_loss_dict[(champion_id_name_lookup[str(champion_id)],
                                               champion_id_name_lookup[str(opponent_champion)])].append('win')
                     except KeyError:
+                        if match['info']['participants'][i]['win']:
+                            win_loss_dict[str(champion_id), str(opponent_champion)].append('loss')
+                        else:
+                            win_loss_dict[str(champion_id), str(opponent_champion)].append('win')
                         continue
+
+        win_percentages = [v.count('win') / (v.count('win') + v.count('loss')) for v in win_loss_dict.values()]
+        for i, (k, v) in enumerate(win_loss_dict.items()):
+            performance_dict[k] = round(win_percentages[i], 2)
 
         print(performance_dict)
 

@@ -13,7 +13,7 @@ import Summoner
 # 20 requests every 1 seconds(s)
 # 100 requests every 2 minutes(s)
 
-DEBUG = False
+DEBUG = True
 
 
 def connect_database(db_user, db_pw, db_name):
