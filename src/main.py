@@ -68,14 +68,17 @@ async def get_summoner_data(session, api_key, region, summoner_name):
         return data
 
 
-async def get_match_list(session, api_key, region, puuid):
+async def get_match_list(session, api_key, region, puuid, start, count):
     """new match-v5 API call changed region from 'euw1' to 'europe'"""
     async with session.get(
             "https://" +
             "europe" +
             ".api.riotgames.com/lol/match/v5/matches/by-puuid/" +
             puuid +
-            "/ids?start=0&count=100&" +
+            "/ids?start=" +
+            start +
+            "&count=" +
+            count +
             "&api_key=" +
             api_key
     ) as resp:
@@ -150,7 +153,9 @@ async def main():
 
         # adapted to match-v5 (using puuid) since match-v4 (accountid) is being deprecated soon
         puuid = profile_data["puuid"]
-        match_list = await get_match_list(session, api_key, region, puuid)
+        start = str(0)
+        count = str(100)
+        match_list = await get_match_list(session, api_key, region, puuid, start, count)
         print(match_list)
 
         # get last ~100 matches
