@@ -1,26 +1,20 @@
 # predict-LoL-performance
 
 ## Work Packages
+0. Rate Limiter
 1. perstistency of data (mongodb)
 2. champion v champion performance
-3. 
+3. Afer winning or losing a game -> what is the likelihood of winning/losing the next one? i.e. Markov Chains
+4. Verify the op.gg champion counter statistics by crawling champion v champion performance data from thousands of players and
+   checking the win/lose likelihood
+   
+5. Visualisation using Splunk -> forward output data to AWS instance running Splunk enterprise
 
-constants.py structure:
+### .env file
+includes
 
-API_KEY = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+PREDLOL_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-LOL_REGION = "euw1"
+PREDLOL_SUMMONER_NAME="xxxxxxx"
 
-SUMMONER = "name"
-
-
-def GET_API_KEY():
-    return API_KEY
-
-
-def GET_REGION():
-    return LOL_REGION
-
-
-def GET_SUMMONER():
-    return SUMMONER
+PREDLOL_REGION="euw1"
