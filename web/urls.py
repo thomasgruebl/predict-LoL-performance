@@ -17,6 +17,8 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('lol/', include('lol.urls')),
+    # lol app home page
+    path('', include('lol.urls')),
+    # admin config page
     path('admin/', admin.site.urls),
 ]
