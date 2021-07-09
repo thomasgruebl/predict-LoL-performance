@@ -19,10 +19,6 @@ DEBUG = True
 def connect_database(db_user, db_pw, db_name):
     # .env file:
 
-    # DB_USER = "predlol_user"
-    # DB_PW = "c75nvUxhcdQNYrlM"
-    # DB_NAME = "predlol"
-
     try:
         cluster = MongoClient(
             "mongodb+srv://" +
