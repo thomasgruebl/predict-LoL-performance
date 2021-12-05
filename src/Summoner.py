@@ -75,7 +75,7 @@ class Summoner(object):
     def get_total_hours(self):
         total_hours = 0
         for match in self.match_data:
-            total_hours += int(match['info']['gameDuration']) / 3600000
+            total_hours += int(match['info']['gameDuration']) / 3600
 
         print("Total hours played: ", total_hours)
         return total_hours
@@ -91,15 +91,14 @@ class Summoner(object):
                 continue
             participant_id = self._get_participant_id_from_summoner_name(self.participants[idx])
             unixtime = int(match['info']['gameCreation']) / 1000
-            weekday = datetime.utcfromtimestamp(unixtime).strftime('%A')
+            weekday = datetime.utcfromtimestamp(unixtime).weekday()
+            weekday = list(win_loss_per_weekday.keys())[weekday]
             for i in range(0, 10):
                 if match['info']['participants'][i]['participantId'] == participant_id:
                     if match['info']['participants'][i]['win']:
                         win_loss_per_weekday[weekday][0] += 1
                     else:
                         win_loss_per_weekday[weekday][1] += 1
-
-        print(win_loss_per_weekday)
 
         # Optional: plot weekday performance
 
@@ -167,7 +166,7 @@ class Summoner(object):
         for i, (k, v) in enumerate(win_loss_dict.items()):
             performance_dict[k] = round(win_percentages[i], 2)
 
-        print(performance_dict)
+        return performance_dict
 
     def predict_next_game_outcome(self):
         """Markov Chain prediction of next game win/loss"""
