@@ -3,9 +3,7 @@ import os
 import time
 
 import aiohttp
-import pymongo
 from dotenv import load_dotenv
-from pymongo import MongoClient
 
 import Summoner
 
@@ -16,39 +14,39 @@ import Summoner
 DEBUG = True
 
 
-def connect_database(db_user, db_pw, db_name):
-    # .env file:
-
-    try:
-        cluster = MongoClient(
-            "mongodb+srv://" +
-            db_user +
-            ":" +
-            db_pw +
-            "@cluster0.qxngf.mongodb.net/" +
-            db_name +
-            "?retryWrites=true&w=majority"
-        )
-
-        db = cluster[db_name]
-        collection = db["python"]
-
-        return collection
-
-    except Exception as e:
-        print("Connection Error.")
-
-
-def post_database(collection, summoner_id, summoner_name, match_list, match_data):
-    for idx, id in enumerate(match_list):
-        doc = {"_id": id,
-               "summoner_id": summoner_id,
-               "summoner_name": summoner_name,
-               "match_data": match_data[idx]}
-        try:
-            collection.update_one(doc, {'$set': doc}, upsert=True)
-        except pymongo.errors.DuplicateKeyError:
-            continue
+# def connect_database(db_user, db_pw, db_name):
+#     # .env file:
+#
+#     try:
+#         cluster = MongoClient(
+#             "mongodb+srv://" +
+#             db_user +
+#             ":" +
+#             db_pw +
+#             "@cluster0.qxngf.mongodb.net/" +
+#             db_name +
+#             "?retryWrites=true&w=majority"
+#         )
+#
+#         db = cluster[db_name]
+#         collection = db["python"]
+#
+#         return collection
+#
+#     except Exception as e:
+#         print("Connection Error.")
+#
+#
+# def post_database(collection, summoner_id, summoner_name, match_list, match_data):
+#     for idx, id in enumerate(match_list):
+#         doc = {"_id": id,
+#                "summoner_id": summoner_id,
+#                "summoner_name": summoner_name,
+#                "match_data": match_data[idx]}
+#         try:
+#             collection.update_one(doc, {'$set': doc}, upsert=True)
+#         except pymongo.errors.DuplicateKeyError:
+#             continue
 
 
 async def get_summoner_data(session, api_key, region, summoner_name):
@@ -128,7 +126,7 @@ async def main():
     db_pw = os.getenv("DB_PW")
     db_name = os.getenv("DB_NAME")
 
-    collection = connect_database(db_user, db_pw, db_name)
+    # collection = connect_database(db_user, db_pw, db_name)
 
     async with aiohttp.ClientSession() as session:
 
@@ -180,13 +178,15 @@ async def main():
         print(champion_id_name_lookup)
 
     summoner = Summoner.Summoner(summoner_name, profile_data, match_list, match_data)
-    # summoner.get_total_hours()
-    # summoner.get_participants_v4()
+
+    print(summoner.get_total_hours())
+
     summoner.get_participants_v5()
-    # summoner.get_weekday_performance()
-    summoner.get_champion_v_champion_performance(champion_id_name_lookup)
-    outcome = summoner.predict_next_game_outcome()
-    print(outcome)
+    print(summoner.get_weekday_performance())
+
+    print(summoner.get_champion_v_champion_performance(champion_id_name_lookup))
+
+    print(summoner.predict_next_game_outcome())
 
     # post to database
     # post_database(collection, summoner_id, summoner_name, match_list, match_data)
